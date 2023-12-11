@@ -21,30 +21,30 @@ US ->
     c1 -> h6 => 98.613 ms 6% packet loss
 
 
-#       a) How many requests can be handled by a single machine?
+#        a) How many requests can be handled by a single machine?
 
-        What is the latency of each region?
+#        b) What is the latency of each region?
 
 ASIA -> Average latency of 68,084 ms
 EMEA -> Average latency of 73.0685
 US -> Average latency of 95.7445
 
 
-#        b) What is the server path with the smallest response time? But the slowest?
+#        c) What is the server path with the smallest response time? But the slowest?
 
 The fastest server path is c1 -> h2 with a lattency of 67.94 ms while
 the slowest one is c1 -> h6 with a latency of 98.613 ms
 
 
-#        c) What is the path that has the greatest loss percentage?
+#        d) What is the path that has the greatest loss percentage?
 
 The path with the greatest loss percentage is c1 -> h2 with a 11% packet loss
 
-#        d) What is the latency introduced by the first router in our path?
+#        e) What is the latency introduced by the first router in our path?
 
 The latency of the first router is of 0.092 ms
 
-#        e) Is there any bottleneck in the topology? How would you solve this issue?
+#        f) Is there any bottleneck in the topology? How would you solve this issue?
 
         Based on the provided latency and packet loss data, there are indications of potential bottlenecks in the network topology. Here's an analysis of potential bottlenecks and how to address them:
 
@@ -67,7 +67,7 @@ The latency of the first router is of 0.092 ms
         Traffic Engineering: Continuously monitor traffic patterns and adjust network configurations to accommodate increased demand.
 
 
-#        f) What is your estimation regarding the latency introduced?
+#        g) What is your estimation regarding the latency introduced?
         
     The estimation of latency introduced within the network can be derived from the ping times observed during communication between the client (c1) and various network components. Here is a detailed analysis:
 
@@ -81,7 +81,7 @@ The latency of the first router is of 0.092 ms
 
     In summary, the latency introduced within the network varies significantly across regions. The ASIA region experiences the highest additional latency, primarily due to factors beyond the initial router, while the EMEA region demonstrates minimal latency increase. These estimations provide insights into the network's performance and can guide optimization efforts.
 
-#        g) What downsides do you see in the current architecture design?
+#        h) What downsides do you see in the current architecture design?
 
 The current architecture design shows some potential downsides:
 
