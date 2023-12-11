@@ -1,8 +1,8 @@
 # Use an official Python runtime as a parent image
-FROM python:3.8-slim
+FROM python:3.11
 
 # Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR .
 
 # Copy the current directory contents into the container at /usr/src/app
 COPY . .
@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 80
 
 # Define environment variable
-ENV NAME World
+ENV NAME Topology
 
 # Run app.py when the container launches
-CMD ["python", "app.py"]
+CMD ["python3", "topology.cypython-311.pyc", "alexandru.olteanu01"]
