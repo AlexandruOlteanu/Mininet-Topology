@@ -5,8 +5,8 @@ import requests
 import sys
 import argparse
 import requests_cache
-import concurrent.futures
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 # ANSI color escape codes
 ANSI_RED     = '\033[31m'
@@ -19,10 +19,12 @@ ANSI_BOLD    = '\033[1m'
 ANSI_UNBOLD  = '\033[2m'
 
 # Initialize cache (for example, cache responses for 2 hours)
-requests_cache.install_cache('http_cache', expire_after=7200)
+requests_cache.install_cache('http_cache', backend='sqlite', expire_after=7200, fast_save=True)
 
-# Logging lock for thread safety
-log_lock = threading.Lock()
+
+# Thread-safe logging buffer
+log_buffer = []
+log_buffer_lock = threading.Lock()
 
 ################################################################################
 ############################### CLIENT BACKENDS ################################
@@ -49,33 +51,53 @@ def http_get(url: str):
 
 # disp_http - Updated with efficient logging
 def disp_http(resp_list):
-    with log_lock:
-        with open('client_log.txt', 'a') as logfile:  # Changed to 'a' for append mode
-            for resp in resp_list:
-                # select color for status message depending on class
-                m_color = ANSI_MAGENTA     # this signifies an invalid code
-                if 100 <= resp[1] < 200:    # Informational Response
-                    sm_color = ANSI_BLUE
-                if 200 <= resp[1] < 300:    # Successful Response
-                    sm_color = ANSI_GREEN
-                if 300 <= resp[1] < 400:    # Redirection Response
-                    sm_color = ANSI_YELLOW
-                if 400 <= resp[1] < 500:    # Client Error Response
-                    sm_color = ANSI_RED
-                if 500 <= resp[1] < 600:    # Server Error Response
-                    sm_color = ANSI_RED
-                # print the info
-                print('%sURL :%s %s%s' % \
-                      (ANSI_BOLD, ANSI_UNBOLD, resp[0], ANSI_CLR), file=logfile)
-                print('%sCODE:%s %s%d%s' % \
-                      (ANSI_BOLD, ANSI_UNBOLD, sm_color, resp[1], ANSI_CLR), file=logfile)
-                print('%sTIME:%s %d [microsecs]%s' % \
-                      (ANSI_BOLD, ANSI_UNBOLD, resp[2], ANSI_CLR), file=logfile)
-                print("\n", file=logfile)
+    log_entries = []
+    for resp in resp_list:
+        # Prepare log entry
+        entry = ""
+        if resp[1] == "ERROR":
+            entry += f"{ANSI_RED}ERROR: {resp[2]} for URL {resp[0]}{ANSI_CLR}\n"
+        else:
+            # select color for status message depending on class
+            if 100 <= resp[1] < 200:    # Informational Response
+                sm_color = ANSI_BLUE
+            elif 200 <= resp[1] < 300:  # Successful Response
+                sm_color = ANSI_GREEN
+            elif 300 <= resp[1] < 400:  # Redirection Response
+                sm_color = ANSI_YELLOW
+            elif 400 <= resp[1]:        # Error Response
+                sm_color = ANSI_RED
+            else:
+                sm_color = ANSI_MAGENTA # Invalid code
+            entry += f'{ANSI_BOLD}URL :{ANSI_UNBOLD} {resp[0]}{ANSI_CLR}\n'
+            entry += f'{ANSI_BOLD}CODE:{ANSI_UNBOLD} {sm_color}{resp[1]}{ANSI_CLR}\n'
+            entry += f'{ANSI_BOLD}TIME:{ANSI_UNBOLD} {resp[2]} [microsecs]{ANSI_CLR}\n\n'
+        
+        log_entries.append(entry)
+
+    with log_buffer_lock:
+        log_buffer.extend(log_entries)
+
+# Write log buffer to file
+def write_log():
+    with open('client_log.txt', 'a') as logfile:
+        with log_buffer_lock:
+            for entry in log_buffer:
+                print(entry, file=logfile, end='')
+
 
 ################################################################################
 ############################## SCRIPT ENTRY POINT ##############################
 ################################################################################
+
+def process_url(proto, url):
+    if proto == 'http' and not url.startswith('http://'):
+        url = 'http://' + url
+    elif proto == 'https' and not url.startswith('https://'):
+        url = 'https://' + url
+    ans = http_get(url)
+    disp_http(ans)
+
 
 def main():
     # parse CLI arguments
@@ -84,18 +106,18 @@ def main():
     parser.add_argument('-p', '--proto', help='application protocol', default='http', choices=['http', 'https'])
     args = parser.parse_args()
 
-    # Process each URL in a separate thread
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        futures = []
-        for url in args.URLs:
-            if args.proto == 'http' and not url.startswith('http://'):
-                url = 'http://' + url
-            elif args.proto == 'https' and not url.startswith('https://'):
-                url = 'https://' + url
-            futures.append(executor.submit(http_get, url))
+    # Use ThreadPoolExecutor to parallelize the URL processing
 
-        for future in concurrent.futures.as_completed(futures):
-            disp_http(future.result())
+    with ThreadPoolExecutor(max_workers=10) as executor:
+         # Submit all URLs for processing
+        futures = [executor.submit(process_url, args.proto, url) for url in args.URLs]
+
+         # Wait for all futures to complete (optional)
+        for future in futures:
+             # You can add error handling or logging here if needed
+            future.result()
+
+    write_log()
 
 if __name__ == '__main__':
     main()
