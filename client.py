@@ -30,19 +30,19 @@ log_buffer_lock = threading.Lock()
 ############################### CLIENT BACKENDS ################################
 ################################################################################
 
-# http_get - Updated with timeout and exception handling
-def http_get(url: str):
+# Persistent HTTP session for batch requests
+session = requests.Session()
+
+def http_get_batch(urls: list):
     ret = []
-    try:
-        while True:
-            req = requests.get(url, allow_redirects=False, timeout=15)  # 15-second timeout
+    for url in urls:
+        try:
+            req = session.get(url, allow_redirects=False, timeout=15)  # 15-second timeout
             ret.append((url, req.status_code, req.elapsed.microseconds))
             if req.is_redirect and req.next.url is not None:
                 url = req.next.url
-            else:
-                break
-    except requests.RequestException as e:
-        print(f"Request error: {e}")
+        except requests.RequestException as e:
+            print(f"Request error: {e}")
     return ret
 
 ################################################################################
@@ -90,12 +90,10 @@ def write_log():
 ############################## SCRIPT ENTRY POINT ##############################
 ################################################################################
 
-def process_url(proto, url):
-    if proto == 'http' and not url.startswith('http://'):
-        url = 'http://' + url
-    elif proto == 'https' and not url.startswith('https://'):
-        url = 'https://' + url
-    ans = http_get(url)
+def process_url_batch(proto, urls):
+    # Add protocol if not present
+    processed_urls = [f'{proto}://{url}' if not url.startswith(f'{proto}://') else url for url in urls]
+    ans = http_get_batch(processed_urls)
     disp_http(ans)
 
 
@@ -109,12 +107,12 @@ def main():
     # Use ThreadPoolExecutor to parallelize the URL processing
 
     with ThreadPoolExecutor(max_workers=10) as executor:
-         # Submit all URLs for processing
-        futures = [executor.submit(process_url, args.proto, url) for url in args.URLs]
+        # Group URLs for batch processing
+        urls_grouped = [args.URLs[i:i+10] for i in range(0, len(args.URLs), 10)] # Example: batch of 10 URLs
+        futures = [executor.submit(process_url_batch, args.proto, group) for group in urls_grouped]
 
-         # Wait for all futures to complete (optional)
+        # Wait for all futures to complete
         for future in futures:
-             # You can add error handling or logging here if needed
             future.result()
 
     write_log()

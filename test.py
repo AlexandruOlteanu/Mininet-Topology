@@ -1,5 +1,6 @@
 import time
 import threading
+import random
 
 
 def test(net):
@@ -35,9 +36,18 @@ def test(net):
     
     # Start the HTTP server on h1
     h1.sendCmd("python3 -m http.server 9000 &")
+    h2.sendCmd("python3 -m http.server 9000 &")
+    h3.sendCmd("python3 -m http.server 9000 &")
+    h4.sendCmd("python3 -m http.server 9000 &")
+    h5.sendCmd("python3 -m http.server 9000 &")
+    h6.sendCmd("python3 -m http.server 9000 &")
 
     # Testing multiple requests
-    test_multiple_urls(c1, h1)
+    # test_multiple_urls(c1, h1)
+
+    # Testing multiple different requests
+    destinations = [h1, h2, h3, h4, h5, h6]
+    test_multiple_diferent_urls(c1, destinations)
 
     # Start the max number of requests
     # test_max_nr_request(c1, h1)
@@ -71,9 +81,20 @@ def test_max_nr_request(source, destination):
 
 def test_multiple_urls(source, destination):
     request_url = destination.IP() + ":9000"
-    all_requests = " ".join([request_url] * 100)
+    all_requests = " ".join([request_url] * 200)
     c1_run = "python3 client.py -p http " + all_requests
     source.sendCmd(c1_run);
+    output = source.waitOutput()
+    print(output)
+    return
+
+def test_multiple_diferent_urls(source, destinations):
+    request_url = "python3 client.py -p http";
+    for i in range (1, 200):
+        r = random.randrange(len(destinations))
+        request_url += " " + destinations[r].IP() + ":9000"
+
+    source.sendCmd(request_url);
     output = source.waitOutput()
     print(output)
     return
