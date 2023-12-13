@@ -36,15 +36,18 @@ def test(net):
     # Start the HTTP server on h1
     h1.sendCmd("python3 -m http.server 9000 &")
 
+    # Testing multiple requests
+    test_multiple_urls(c1, h1)
+
     # Start the max number of requests
-    test_max_nr_request(c1, h1)
+    # test_max_nr_request(c1, h1)
     
 
     print("Running base test with only one server")
     c1.sendCmd("python3 client.py -p http 10.10.101.2:9000")
 
     # Wait for the client command to finish and retrieve its output
-    output = net.get("c1").waitOutput()
+    output = c1.waitOutput()
     print("Client output:")
     print(output)
 
@@ -64,4 +67,13 @@ def test_max_nr_request(source, destination):
         output = source.waitOutput()  # Wait for each command to complete before the next
         print(f"Request finished succesfully: #{iter}")
         iter = iter + 1
+    return
+
+def test_multiple_urls(source, destination):
+    request_url = destination.IP() + ":9000"
+    all_requests = " ".join([request_url] * 100)
+    c1_run = "python3 client.py -p http " + all_requests
+    source.sendCmd(c1_run);
+    output = source.waitOutput()
+    print(output)
     return
