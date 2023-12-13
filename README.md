@@ -22,6 +22,11 @@ US ->
 
 
 #        a) How many requests can be handled by a single machine?
+I managed to add a new function to test.py "test_max_nr_request" which is sending 
+continousely requests from source to destination and outputs a succes message after
+each one. I tested sending requests from the client to h1 and after the 306 request
+I waited for several minutes but the request 307 was not completed. So in conclusion
+the maximum number of requests that a machine can process is 306.
 
 #        b) What is the latency of each region?
 
