@@ -103,3 +103,20 @@ The current architecture design shows some potential downsides:
     Potential Bottlenecks: The connection to the ASIA region shows the highest latency and packet loss, suggesting a bottleneck. This could be due to insufficient bandwidth, poor quality of service (QoS) settings, or simply because the traffic is too high for the current infrastructure.
 
 To address these downsides, one could consider implementing redundant paths to avoid single points of failure, upgrading the infrastructure to handle higher loads, optimizing routing to reduce latency, and using quality of service (QoS) to manage traffic effectively. Additionally, regularly monitoring network traffic and performance can help identify and alleviate bottlenecks before they impact users significantly.
+
+
+
+
+III. Implementation
+
+## Solutions
+Efficient Logging:
+The current implementation opens and closes the logfile in every iteration of the loop within disp_http. This is inefficient, especially for a large number of requests. Instead, open the logfile once at the beginning of the function and close it after the loop. This will reduce the overhead associated with file I/O operations.
+
+Timeout and Exception Handling:
+The http_get function does not currently implement a timeout or handle exceptions. Adding a timeout ensures that the request does not hang indefinitely. Exception handling is crucial for robustness, especially for network operations that are prone to various errors (like network issues, invalid URLs, etc.).
+
+Response Caching:
+To optimize repeated requests to the same URL, implement caching. You can cache the responses for a certain duration. This will significantly reduce network traffic and improve performance for repeated requests. Python's requests_cache library or a custom caching solution could be used.
+
+

@@ -3,7 +3,6 @@ import threading
 
 
 def test(net):
-    # Get hosts h1 and h2
 
     #command unit
     c1 = net.get("c1")
@@ -38,7 +37,7 @@ def test(net):
     h1.sendCmd("python3 -m http.server 9000 &")
 
     # Start the max number of requests
-    # test_max_nr_request(c1, h1)
+    test_max_nr_request(c1, h1)
     
 
     print("Running base test with only one server")
