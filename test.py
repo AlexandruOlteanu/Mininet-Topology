@@ -66,7 +66,7 @@ def test(net):
     return
 
 def check_ping_latency(source, destination):
-    result = source.cmd('ping -c 3', destination.IP())
+    result = source.cmd('ping -c 100', destination.IP())
     print(result)
     return
 
