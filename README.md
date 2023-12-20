@@ -120,3 +120,19 @@ Response Caching:
 To optimize repeated requests to the same URL, implement caching. You can cache the responses for a certain duration. This will significantly reduce network traffic and improve performance for repeated requests. Python's requests_cache library or a custom caching solution could be used.
 
 
+## Results
+
+Same URLS:
+    10 requets : 0.709 s
+    50 requests: 0.715 s
+    100 requests: 0.994 s
+    200 requests: 1.13 s
+
+Different URLS:
+    10 requets : 0.923 s
+    50 requests: 0.774 s
+    100 requests: 0.827 s
+    200 requests: 0.815 s
+
+
+

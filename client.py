@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import requests
-import sys
 import argparse
 import requests_cache
 import threading
 from concurrent.futures import ThreadPoolExecutor
+
+BATCH_CHUNK_SIZE = 15
 
 # ANSI color escape codes
 ANSI_RED     = '\033[31m'
@@ -18,11 +19,8 @@ ANSI_CLR     = '\033[0m'
 ANSI_BOLD    = '\033[1m'
 ANSI_UNBOLD  = '\033[2m'
 
-# Initialize cache (for example, cache responses for 2 hours)
-requests_cache.install_cache('http_cache', backend='sqlite', expire_after=7200, fast_save=True)
+requests_cache.install_cache('http_cache', backend='sqlite', expire_after=3600, fast_save=True)
 
-
-# Thread-safe logging buffer
 log_buffer = []
 log_buffer_lock = threading.Lock()
 
@@ -37,13 +35,27 @@ def http_get_batch(urls: list):
     ret = []
     for url in urls:
         try:
-            req = session.get(url, allow_redirects=False, timeout=15)  # 15-second timeout
+            req = session.get(url, allow_redirects=False, timeout=15)
             ret.append((url, req.status_code, req.elapsed.microseconds))
             if req.is_redirect and req.next.url is not None:
                 url = req.next.url
         except requests.RequestException as e:
             print(f"Request error: {e}")
     return ret
+
+def process_url_batch(proto, urls):
+    # Add protocol if not present
+    processed_urls = [f'{proto}://{url}' if not url.startswith(f'{proto}://') else url for url in urls]
+    ans = http_get_batch(processed_urls)
+    disp_http(ans)
+
+
+# Write log buffer to file
+def write_log():
+    with open('client_log.txt', 'a') as logfile:
+        with log_buffer_lock:
+            for entry in log_buffer:
+                print(entry, file=logfile, end='')
 
 ################################################################################
 ########################### RESPONSE PRETTY PRINTERS ###########################
@@ -78,24 +90,9 @@ def disp_http(resp_list):
     with log_buffer_lock:
         log_buffer.extend(log_entries)
 
-# Write log buffer to file
-def write_log():
-    with open('client_log.txt', 'a') as logfile:
-        with log_buffer_lock:
-            for entry in log_buffer:
-                print(entry, file=logfile, end='')
-
-
 ################################################################################
 ############################## SCRIPT ENTRY POINT ##############################
 ################################################################################
-
-def process_url_batch(proto, urls):
-    # Add protocol if not present
-    processed_urls = [f'{proto}://{url}' if not url.startswith(f'{proto}://') else url for url in urls]
-    ans = http_get_batch(processed_urls)
-    disp_http(ans)
-
 
 def main():
     # parse CLI arguments
@@ -104,11 +101,9 @@ def main():
     parser.add_argument('-p', '--proto', help='application protocol', default='http', choices=['http', 'https'])
     args = parser.parse_args()
 
-    # Use ThreadPoolExecutor to parallelize the URL processing
-
     with ThreadPoolExecutor(max_workers=10) as executor:
         # Group URLs for batch processing
-        urls_grouped = [args.URLs[i:i+10] for i in range(0, len(args.URLs), 10)] # Example: batch of 10 URLs
+        urls_grouped = [args.URLs[i:i + BATCH_CHUNK_SIZE] for i in range(0, len(args.URLs), BATCH_CHUNK_SIZE)]
         futures = [executor.submit(process_url_batch, args.proto, group) for group in urls_grouped]
 
         # Wait for all futures to complete

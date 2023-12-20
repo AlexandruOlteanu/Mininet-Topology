@@ -1,6 +1,5 @@
-import time
-import threading
 import random
+import time
 
 
 def test(net):
@@ -83,8 +82,11 @@ def test_multiple_urls(source, destination):
     request_url = destination.IP() + ":9000"
     all_requests = " ".join([request_url] * 200)
     c1_run = "python3 client.py -p http " + all_requests
+    start_time = time.time()
     source.sendCmd(c1_run);
     output = source.waitOutput()
+    end_time = time.time();
+    print("Testing multiple identic URL's took ", end_time - start_time, " s");
     print(output)
     return
 
@@ -93,8 +95,10 @@ def test_multiple_diferent_urls(source, destinations):
     for i in range (1, 200):
         r = random.randrange(len(destinations))
         request_url += " " + destinations[r].IP() + ":9000"
-
+    start_time = time.time()
     source.sendCmd(request_url);
     output = source.waitOutput()
+    end_time = time.time();
+    print("Testing multiple random URL's took ", end_time - start_time, " s");
     print(output)
     return
