@@ -1,4 +1,4 @@
-# Use an official Python runtime as a parent image
+# Use Python runtime as a parent image
 FROM python:3.11
 
 # Set the working directory in the container
@@ -18,4 +18,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 ENV NAME Topology
 
 # Run app.py when the container launches
-CMD ["python3", "topology.cpython-311.pyc", "alexandru.olteanu01"]
+CMD ["python3.11", "topology.cpython-311.pyc", "alexandru.olteanu01", "-t"]
